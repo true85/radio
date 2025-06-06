@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>한국 정오→독일 정오 라디오 플레이어</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Video.js 불러오기 -->
+    <link
+      href="https://vjs.zencdn.net/8.3.0/video-js.css"
+      rel="stylesheet"
+    />
+    <script src="https://vjs.zencdn.net/8.3.0/video.min.js"></script>
+
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: #000;
+        display: flex;
+        flex-direction: column;
+        font-family: "Pretendard", sans-serif;
+      }
+      #controls {
+        background: #111;
+        color: #fff;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      #error {
+        color: #f44336;
+        font-size: 0.9rem;
+      }
+      select {
+        background: #222;
+        color: #fff;
+        border: 1px solid #444;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 1rem;
+      }
+      #player-wrapper {
+        flex: 1 1 auto;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 방송 선택 UI -->
+    <div id="controls">
+      <label for="stream-select">방송 선택:</label>
+      <select id="stream-select">
+        <optgroup label="KBS TV">
+          <option value="kbs:25">KBS1</option>
+          <option value="kbs:24">KBS2</option>
+        </optgroup>
+        <optgroup label="MBC 라디오">
+          <option value="imbc:sfm">표준FM</option>
+          <option value="imbc:mfm">FM4U</option>
+        </optgroup>
+        <optgroup label="SBS 라디오">
+          <option value="sbs:powerfm">파워FM</option>
+        </optgroup>
+      </select>
+      <span id="error"></span>
+    </div>
+
+    <!-- Video.js 플레이어 -->
+    <div id="player-wrapper">
+      <video
+        id="player"
+        class="video-js vjs-default-skin"
+        controls
+        preload="auto"
+        playsinline
+        style="width: 100%; height: 100%"
+        data-setup="{}"
+      ></video>
+    </div>
+
+    <script>
+      // Shift Worker 호출 기본 URL
+      const SHIFT_BASE =
+        "https://radio-timeshift.<your-subdomain>.workers.dev/shift";
+      const INIT_VOLUME = 0.5; // 볼륨 50%
+
+      // 방송사+채널 → Shift m3u8 URL 생성
+      function buildShiftUrl(type, ch) {
+        return `${SHIFT_BASE}/7h/${type}/${ch}`;
+      }
+
+      // 확장자별 MIME 추정
+      function guessMime(url) {
+        url = url.toLowerCase();
+        if (url.endsWith(".aac")) return "audio/aac";
+        if (url.endsWith(".mp3")) return "audio/mpeg";
+        return "application/x-mpegURL"; // HLS
+      }
+
+      (function init() {
+        const select = document.getElementById("stream-select");
+        const err = document.getElementById("error");
+        const player = videojs("player");
+
+        async function playShift() {
+          err.textContent = "";
+          const [type, ...rest] = select.value.split(":");
+          const ch = rest.join(":");
+          const url = buildShiftUrl(type, ch);
+
+          player.pause();
+          player.reset();
+          player.src({ src: url, type: guessMime(url) });
+          player.volume(INIT_VOLUME);
+
+          player.one("error", () => {
+            err.textContent = "재생 오류 발생";
+          });
+          player.ready(() => {
+            const p = player.play();
+            p?.catch(() => {
+              err.textContent = "자동 재생이 차단되었습니다. ▶ 클릭해주세요.";
+            });
+          });
+        }
+
+        select.addEventListener("change", playShift);
+        playShift();
+      })();
+    </script>
+  </body>
+</html>
