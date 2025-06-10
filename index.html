@@ -4,48 +4,85 @@
 <meta charset="UTF-8">
 <title>Radio Timeshift Player</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Hls.js (video.js 없이도 가볍게) -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 <style>
-body{margin:0;background:#000;font-family:sans-serif;display:flex;flex-direction:column;height:100vh}
-#controls{background:#111;color:#fff;padding:8px;display:flex;gap:8px;align-items:center}
-select{background:#222;color:#fff;border:1px solid #444;padding:4px 8px;border-radius:4px}
+body{margin:0;background:#000;font-family:sans-serif;height:100vh;display:flex;flex-direction:column}
+#controls{background:#111;color:#fff;padding:8px;display:flex;align-items:center;gap:8px;font-size:14px}
+select{background:#222;color:#fff;border:1px solid #444;border-radius:4px;padding:4px 8px}
+#error{color:#f44336;font-size:12px}
 video{width:100%;height:100%}
-#error{color:#f44336;font-size:.9rem}
 </style>
 </head>
 <body>
+
 <div id="controls">
-  <label>방송:</label>
-  <select id="sel">
+  <label>방송사:</label>
+  <select id="stream">
     <optgroup label="KBS"><option value="kbs:25">KBS1</option></optgroup>
-    <optgroup label="MBC"><option value="imbc:sfm">표준FM</option><option value="imbc:mfm">FM4U</option></optgroup>
+    <optgroup label="MBC">
+      <option value="imbc:sfm">표준FM</option>
+      <option value="imbc:mfm">FM4U</option>
+    </optgroup>
     <optgroup label="SBS"><option value="sbs:powerfm">파워FM</option></optgroup>
   </select>
+
+  <label>시점:</label>
+  <select id="ago">
+    <option value="5m">5 분 전</option>
+    <option value="30m">30 분 전</option>
+    <option value="1h">1 시간 전</option>
+    <option value="3h">3 시간 전</option>
+    <option value="7h" selected>7 시간 전</option>
+  </select>
+
   <span id="error"></span>
 </div>
-<video id="player" controls></video>
+
+<video id="player" controls preload="auto"></video>
 
 <script>
+/* Shift Worker 엔드포인트(본인 워커 주소로 변경 X) */
 const SHIFT = 'https://radio-timeshift-shift.dbr666v.workers.dev/shift';
-const player = document.getElementById('player');
-const sel    = document.getElementById('sel');
-const err    = document.getElementById('error');
 
-function buildUrl(v){const [t,c]=v.split(':');return `${SHIFT}/7h.m3u8/${t}/${c}`;}
+const streamSel = document.getElementById('stream');
+const agoSel    = document.getElementById('ago');
+const errorBox  = document.getElementById('error');
+const videoElem = document.getElementById('player');
 
-function play(){
-  err.textContent='';
-  const url=buildUrl(sel.value);
-  if(Hls.isSupported()){
-    const hls=new Hls({backBufferLength:90});
-    hls.attachMedia(player);
-    hls.on(Hls.Events.MEDIA_ATTACHED,()=>hls.loadSource(url));
-    hls.on(Hls.Events.ERROR,(_,d)=>{if(d.fatal)err.textContent='재생 오류';});
-  }else{ player.src=url; player.load(); }
-  player.play().catch(()=>err.textContent='자동재생이 차단되었습니다. ▶ 클릭');
+/* m3u8 URL 만들기 */
+const buildURL = (val, ago) => {
+  const [type, ch] = val.split(':');
+  return `${SHIFT}/${ago}.m3u8/${type}/${ch}`;
+};
+
+function play() {
+  errorBox.textContent = '';
+  const url = buildURL(streamSel.value, agoSel.value);
+
+  if (Hls.isSupported()) {
+    const hls = new Hls({ backBufferLength: 90 });
+    hls.attachMedia(videoElem);
+    hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(url));
+    hls.on(Hls.Events.ERROR, (_, data) => {
+      if (data.fatal) errorBox.textContent = '재생 오류';
+    });
+  } else {               // Safari 등 네이티브 HLS
+    videoElem.src = url;
+    videoElem.load();
+  }
+
+  videoElem.play().catch(() => {
+    errorBox.textContent = '자동 재생이 차단되었습니다. ▶ 버튼을 눌러 주세요.';
+  });
 }
 
-sel.addEventListener('change',play); play();
+/* 이벤트 바인딩 */
+streamSel.addEventListener('change', play);
+agoSel.addEventListener('change',   play);
+
+/* 첫 로드 재생 */
+play();
 </script>
 </body>
 </html>
