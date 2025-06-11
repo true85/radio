@@ -2,13 +2,13 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>Radio Timeshift Player</title>
+<title>Timeshift Radio Player</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<!-- Hls.js 1.x -->
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+<link href="https://vjs.zencdn.net/8.3.0/video-js.css" rel="stylesheet">
+<script src="https://vjs.zencdn.net/8.3.0/video.min.js"></script> <!-- video.js 8 -->
 <style>
-body{margin:0;background:#000;font-family:sans-serif;height:100vh;display:flex;flex-direction:column}
-#controls{background:#111;color:#fff;padding:8px;display:flex;align-items:center;gap:8px;font-size:14px}
+body{margin:0;background:#000;height:100vh;display:flex;flex-direction:column;font-family:sans-serif}
+#controls{background:#111;color:#fff;padding:8px;display:flex;gap:8px;align-items:center;font-size:14px}
 select{background:#222;color:#fff;border:1px solid #444;border-radius:4px;padding:4px 8px}
 #error{color:#f44336;font-size:12px}
 video{width:100%;height:100%}
@@ -19,16 +19,12 @@ video{width:100%;height:100%}
 <div id="controls">
   <label>방송:</label>
   <select id="stream">
-    <optgroup label="KBS">
-      <option value="kbs:25">KBS1</option>
-    </optgroup>
+    <optgroup label="KBS"><option value="kbs:25">KBS1</option></optgroup>
     <optgroup label="MBC">
       <option value="imbc:sfm">표준FM</option>
       <option value="imbc:mfm">FM4U</option>
     </optgroup>
-    <optgroup label="SBS">
-      <option value="sbs:powerfm">파워FM</option>
-    </optgroup>
+    <optgroup label="SBS"><option value="sbs:powerfm">파워FM</option></optgroup>
   </select>
 
   <label>시점:</label>
@@ -36,55 +32,48 @@ video{width:100%;height:100%}
     <option value="5m">5 분 전</option>
     <option value="30m">30 분 전</option>
     <option value="1h">1 시간 전</option>
-    <option value="3h">3 시간 전</option>
+    <option value="6h">6 시간 전</option>
     <option value="7h" selected>7 시간 전</option>
+    <option value="8h">8 시간 전</option>
+    <option value="9h">9 시간 전</option>
   </select>
 
   <span id="error"></span>
 </div>
 
-<video id="player" controls preload="auto"></video>
+<video id="player" class="video-js vjs-default-skin" controls preload="auto"
+       crossorigin="anonymous"></video>
 
 <script>
-/* Shift Worker 도메인 */
-const SHIFT_ENDPOINT = 'https://radio-timeshift-shift.dbr666v.workers.dev/shift';
+/* Shift Worker 엔드포인트 */
+const SHIFT = 'https://radio-timeshift-shift.dbr666v.workers.dev/shift';
 
 const $stream = document.getElementById('stream');
 const $ago    = document.getElementById('ago');
 const $error  = document.getElementById('error');
-const $video  = document.getElementById('player');
+const player  = videojs('player');
 
-function m3u8URL(streamVal, agoVal){
-  const [type,ch] = streamVal.split(':');
-  return `${SHIFT_ENDPOINT}/${agoVal}.m3u8/${type}/${ch}`;
+function buildURL() {
+  const [type, ch] = $stream.value.split(':');
+  return `${SHIFT}/${$ago.value}.m3u8/${type}/${ch}`;
 }
 
-function play(){
+function play() {
   $error.textContent = '';
-  const url = m3u8URL($stream.value, $ago.value);
+  player.pause();
+  player.reset();
 
-  /* Hls.js 재설정 */
-  if (window.hls) { window.hls.destroy(); window.hls = null; }
-  if (Hls.isSupported()) {
-    window.hls = new Hls({ backBufferLength:90 });
-    window.hls.attachMedia($video);
-    window.hls.on(Hls.Events.MEDIA_ATTACHED, () => window.hls.loadSource(url));
-    window.hls.on(Hls.Events.ERROR, (_e,d) => {
-      if (d.fatal) $error.textContent = '재생 오류';
-    });
-  } else {      /* Safari 등 네이티브 HLS */
-    $video.src = url;
-    $video.load();
-  }
-
-  $video.play().catch(()=>{$error.textContent='자동재생 차단 ▶ 클릭';});
+  player.src({ src: buildURL(), type:'application/x-mpegURL' });
+  player.play().catch(() => {
+    $error.textContent = '자동 재생이 차단되었습니다. ▶ 버튼을 눌러 주세요.';
+  });
+  player.one('error', () => { $error.textContent = '재생 오류'; });
 }
 
 $stream.addEventListener('change', play);
-$ago.addEventListener('change', play);
+$ago.addEventListener('change',    play);
 
-/* 첫 로드 */
-play();
+play(); /* 첫 로드 */
 </script>
 </body>
 </html>
