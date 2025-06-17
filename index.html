@@ -1,60 +1,71 @@
-<!-- radio-timeshift-ui.html  (stable v6) -->
+<!-- radio-timeshift-ui.html (v7)
+     GitHub Pages 용 가벼운 HLS 재생기
+     ──────────────────────────────────────────────────────────────────
+     • 2025‑06 결제 v2.8 백엔드(/shift) 규격에 맞춰 URL 작성 로직 수정
+     • 허용 채널: KBS 1 Radio(kbs/25), SBS PowerFM(sbs/powerfm)
+     • /shift/{span}/{type}/{ch}.m3u8 형식에 따라 buildURL() 업데이트
+-->
+
 <!DOCTYPE html>
+
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <title>Timeshift Radio Player</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link href="https://vjs.zencdn.net/8.3.0/video-js.css" rel="stylesheet" />
-    <!-- video.js 8 core (VHS 내장) -->
-    <script src="https://vjs.zencdn.net/8.3.0/video.min.js"></script>
-    <style>
-      :root {
-        --bg: #000;
-        --fg: #fff;
-        --panel: #111;
-        --border: #333;
-      }
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--fg);
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      }
-      #controls {
-        background: var(--panel);
-        padding: 8px 12px;
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        flex-wrap: wrap;
-        font-size: 14px;
-        border-bottom: 1px solid var(--border);
-      }
-      select {
-        background: #222;
-        color: var(--fg);
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        padding: 4px 8px;
-        font-size: 14px;
-      }
-      #error {
-        color: #f44336;
-        font-size: 12px;
-      }
-      video {
-        width: 100%;
-        height: 100%;
-        background: #000;
-      }
-    </style>
+
+```
+<!-- video.js 8 (VHS 내장) -->
+<link href="https://vjs.zencdn.net/8.3.0/video-js.css" rel="stylesheet" />
+<script src="https://vjs.zencdn.net/8.3.0/video.min.js"></script>
+
+<style>
+  :root {
+    --bg: #000;
+    --fg: #fff;
+    --panel: #111;
+    --border: #333;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  #controls {
+    background: var(--panel);
+    padding: 8px 12px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  select {
+    background: #222;
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 14px;
+  }
+  #error {
+    color: #f44336;
+    font-size: 12px;
+  }
+  video {
+    width: 100%;
+    height: 100%;
+    background: #000;
+  }
+</style>
+```
+
   </head>
   <body>
     <!-- ▶ 컨트롤 패널 -->
@@ -64,99 +75,92 @@
         <optgroup label="KBS">
           <option value="kbs:25">KBS 1 Radio</option>
         </optgroup>
-        <optgroup label="MBC">
-          <option value="imbc:mfm">FM4U</option>
-        </optgroup>
         <optgroup label="SBS">
           <option value="sbs:powerfm">파워FM</option>
         </optgroup>
       </select>
 
-      <label for="ago">시점:</label>
-      <select id="ago">
-        <option value="5m">5 분 전</option>
-        <option value="10m">10 분 전</option>
-        <option value="6h">6 시간 전</option>
-        <option value="7h" selected>7 시간 전</option>
-        <option value="8h">8 시간 전</option>
-        <option value="9h">9 시간 전</option>
-      </select>
+```
+  <label for="ago">시점:</label>
+  <select id="ago">
+    <option value="5m">5 분 전</option>
+    <option value="10m">10 분 전</option>
+    <option value="6h" selected>6 시간 전</option>
+    <option value="7h">7 시간 전</option>
+    <option value="8h">8 시간 전</option>
+    <option value="9h">9 시간 전</option>
+  </select>
 
-      <span id="error"></span>
-    </div>
+  <span id="error"></span>
+</div>
 
-    <!-- ▶ Player -->
-    <video
-      id="player"
-      class="video-js vjs-default-skin"
-      controls
-      preload="auto"
-      playsinline
-      crossorigin="anonymous"></video>
+<!-- ▶ Player -->
+<video
+  id="player"
+  class="video-js vjs-default-skin"
+  controls
+  preload="auto"
+  playsinline
+  crossorigin="anonymous"></video>
 
-    <script>
-      /* Shift Worker 엔드포인트 */
-      const SHIFT = "https://radio-timeshift-shift.dbr666v.workers.dev/shift";
+<script>
+  // ① Shift Worker 엔드포인트 (맨 뒤에 '/shift' 경로까지 포함)
+  //    도메인이 달라지면 아래 한 줄만 교체하면 됩니다.
+  const SHIFT = "https://radio-timeshift-shift.dbr666v.workers.dev/shift";
 
-      const $stream = document.getElementById("stream");
-      const $ago = document.getElementById("ago");
-      const $error = document.getElementById("error");
-      const player = videojs("player");
+  const $stream = document.getElementById("stream");
+  const $ago    = document.getElementById("ago");
+  const $error  = document.getElementById("error");
+  const player  = videojs("player");
 
-      /* ─────────── helpers ─────────── */
-      function buildURL() {
-        const [type, ch] = $stream.value.split(":");
-        return `${SHIFT}/${$ago.value}.m3u8/${type}/${ch}`;
-      }
+  /* ───────────────── helpers ───────────────── */
+  function buildURL() {
+    const [type, ch] = $stream.value.split(":");
+    // /shift/{span}/{type}/{ch}.m3u8  (v7 규격)
+    return `${SHIFT}/${$ago.value}/${type}/${ch}.m3u8`;
+  }
 
-      function humanError(err) {
-        switch ((err?.code) ?? -1) {
-          case 4:
-            return "재생할 수 없는 미디어 (404/403)";
-          case 2:
-            return "네트워크 오류 (세그먼트 누락)";
-          default:
-            return "재생 오류";
-        }
-      }
+  function humanError(err) {
+    switch ((err?.code) ?? -1) {
+      case 4: return "재생할 수 없는 미디어 (404/403)";
+      case 2: return "네트워크 오류 (세그먼트 누락)";
+      default: return "재생 오류";
+    }
+  }
 
-      /* ─────────── main ─────────── */
-      player.ready(() => {
-        // 마지막 선택 복원
-        const savedStream = localStorage.getItem("stream");
-        const savedAgo = localStorage.getItem("ago");
-        if (savedStream) $stream.value = savedStream;
-        if (savedAgo) $ago.value = savedAgo;
+  /* ───────────────── main ───────────────── */
+  player.ready(() => {
+    // 로컬 스토리지에서 마지막 선택 복원
+    const savedStream = localStorage.getItem("stream");
+    const savedAgo    = localStorage.getItem("ago");
+    if (savedStream) $stream.value = savedStream;
+    if (savedAgo)    $ago.value    = savedAgo;
 
-        function setSource() {
-          localStorage.setItem("stream", $stream.value);
-          localStorage.setItem("ago", $ago.value);
+    function setSource() {
+      localStorage.setItem("stream", $stream.value);
+      localStorage.setItem("ago",    $ago.value);
 
-          $error.textContent = "";
-          const source = { src: buildURL(), type: "application/x-mpegURL" };
-
-          // src() 만으로 기존 트랙 정리 & 교체 (reset 불필요)
-          player.src(source);
-
-          player.play().catch(() => {
-            $error.textContent =
-              "브라우저가 자동 재생을 차단했습니다. ▶ 버튼을 눌러 주세요.";
-          });
-        }
-
-        // 첫 로드
-        setSource();
-
-        // 오류 메시지 바인딩 (한 번만 등록)
-        player.on("error", () => {
-          const err = player.error();
-          $error.textContent = humanError(err);
-        });
-
-        // UI 이벤트
-        $stream.addEventListener("change", setSource);
-        $ago.addEventListener("change", setSource);
+      $error.textContent = "";
+      player.src({ src: buildURL(), type: "application/x-mpegURL" });
+      player.play().catch(() => {
+        $error.textContent = "브라우저가 자동 재생을 차단했습니다. ▶ 버튼을 눌러 주세요.";
       });
-    </script>
+    }
+
+    // 첫 로드
+    setSource();
+
+    // 오류 핸들러 (한 번만 바인딩)
+    player.on("error", () => {
+      $error.textContent = humanError(player.error());
+    });
+
+    // UI 변경 이벤트
+    $stream.addEventListener("change", setSource);
+    $ago.addEventListener("change",    setSource);
+  });
+</script>
+```
+
   </body>
 </html>
