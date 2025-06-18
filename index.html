@@ -1,202 +1,174 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>라디오 타임시프트 플레이어</title>
-    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
-    <script src="https://vjs.zencdn.net/8.10.0/video.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #007aff;
-            --background-color: #f4f4f8;
-            --container-bg: #ffffff;
-            --text-color: #333333;
-            --label-color: #555555;
-            --border-color: #e0e0e0;
-        }
-        body { font-family: 'Noto Sans KR', sans-serif; background-color: var(--background-color); color: var(--text-color); display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
-        .player-wrapper { background: var(--container-bg); padding: 30px 40px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 700px; text-align: center; }
-        h1 { font-size: 2.2em; font-weight: 700; color: var(--primary-color); margin: 0 0 15px 0; display: flex; align-items: center; justify-content: center; gap: 12px; }
-        .mode-selector { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; background-color: #eef1f5; border-radius: 10px; padding: 5px; }
-        .mode-selector label { padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; font-weight: 500; }
-        .mode-selector input { display: none; }
-        .mode-selector input:checked + label { background-color: white; color: var(--primary-color); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .controls { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 15px; align-items: flex-end; margin-bottom: 30px; }
-        .control-group { display: flex; flex-direction: column; text-align: left; }
-        label { font-weight: 500; margin-bottom: 8px; font-size: 0.95em; color: var(--label-color); }
-        select { padding: 12px; border: 1px solid var(--border-color); border-radius: 10px; font-size: 1em; width: 100%; box-sizing: border-box; background-color: #f9f9f9; height: 48px; }
-        #play-button { padding: 12px 20px; border: none; border-radius: 10px; background-color: var(--primary-color); color: white; font-size: 1em; font-weight: 500; cursor: pointer; transition: background-color 0.3s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 8px; height: 48px; }
-        #play-button:hover { background-color: #0056b3; }
-        #play-button.is-loading { background-color: #a0a0a0; cursor: not-allowed; }
-        .spinner { display: none; width: 18px; height: 18px; border: 2px solid rgba(255, 255, 255, 0.3); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; }
-        #play-button.is-loading .spinner { display: block; }
-        #play-button.is-loading .play-icon { display: none; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .video-js { width: 100%; height: 56px; border-radius: 10px; overflow: hidden; background-color: #2b333f; }
-        #player-container { display: none; margin-top: 20px; }
-        .hidden { display: none !important; }
-        #status-message { color: #888; font-style: italic; margin-top: 15px; height: 20px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>라디오 타임시프트 플레이어</title>
+  <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet"/>
+  <script src="https://vjs.zencdn.net/8.10.0/video.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root { --primary-color:#007aff;--background-color:#f4f4f8;--container-bg:#fff;--text-color:#333;--label-color:#555;--border-color:#e0e0e0; }
+    body { font-family:'Noto Sans KR',sans-serif; background:var(--background-color); color:var(--text-color); display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; padding:20px; }
+    .player-wrapper{background:var(--container-bg);padding:30px 40px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.1);width:100%;max-width:700px;text-align:center;}
+    h1{font-size:2.2em;font-weight:700;color:var(--primary-color);margin:0 0 15px;display:flex;align-items:center;justify-content:center;gap:12px;}
+    .mode-selector{display:flex;justify-content:center;gap:10px;margin-bottom:25px;background:#eef1f5;border-radius:10px;padding:5px;}
+    .mode-selector label{padding:8px 16px;border-radius:8px;cursor:pointer;transition:all .3s;font-weight:500;}
+    .mode-selector input{display:none;}
+    .mode-selector input:checked+label{background:#fff;color:var(--primary-color);box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+    .controls{display:grid;grid-template-columns:1fr 2fr 1fr;gap:15px;align-items:flex-end;margin-bottom:30px;}
+    .control-group{display:flex;flex-direction:column;text-align:left;}
+    label{font-weight:500;margin-bottom:8px;font-size:.95em;color:var(--label-color);}
+    select{padding:12px;border:1px solid var(--border-color);border-radius:10px;font-size:1em;width:100%;background:#f9f9f9;height:48px;}
+    #play-button{padding:12px 20px;border:none;border-radius:10px;background:var(--primary-color);color:#fff;font-size:1em;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;height:48px;transition:background .3s,transform .1s;}
+    #play-button:hover{background:#0056b3;}
+    #play-button.is-loading{background:#a0a0a0;cursor:not-allowed;}
+    .spinner{display:none;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;}
+    #play-button.is-loading .spinner{display:block;}
+    #play-button.is-loading .play-icon{display:none;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .video-js{width:100%;height:56px;border-radius:10px;overflow:hidden;background:#2b333f;}
+    #player-container{display:none;margin-top:20px;}
+    .hidden{display:none!important;}
+    #status-message{color:#888;font-style:italic;margin-top:15px;height:20px;}
+  </style>
 </head>
 <body>
-    <div class="player-wrapper">
-        <h1>
-            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="M12 2a10 10 0 0 0-3.38 19.34"></path><path d="m15.5 12-4.5 3V9l4.5 3z"></path></svg>
-            타임시프트 라디오
-        </h1>
-        <div class="mode-selector">
-            <input type="radio" id="mode-vod" name="mode" value="vod" checked>
-            <label for="mode-vod">프로그램 다시듣기</label>
-            <input type="radio" id="mode-live" name="mode" value="live">
-            <label for="mode-live">실시간 듣기</label>
-        </div>
-        <div class="controls">
-            <div id="station-group" class="control-group">
-                <label for="station-select">방송국</label>
-                <select id="station-select">
-                    <option value="sbs">SBS 파워FM</option>
-                    <option value="kbs">KBS Cool FM (2FM)</option>
-                </select>
-            </div>
-            <div id="vod-group" class="control-group">
-                <label for="program-select">프로그램</label>
-                <select id="program-select"></select>
-            </div>
-            <div id="live-group" class="control-group hidden">
-                <label for="delay-select">지연 시간</label>
-                <select id="delay-select"></select>
-            </div>
-            <button id="play-button">
-                <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
-                <div class="spinner"></div>
-            </button>
-        </div>
-        <div id="status-message"></div>
-        <div id="player-container">
-             <video id="radioPlayer" class="video-js vjs-big-play-centered" controls preload="auto"></video>
-        </div>
+  <div class="player-wrapper">
+    <h1>
+      <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
+        <path d="M12 2a10 10 0 0 0-3.38 19.34"></path>
+        <path d="m15.5 12-4.5 3V9l4.5 3z"></path>
+      </svg>
+      타임시프트 라디오
+    </h1>
+    <div class="mode-selector">
+      <input type="radio" id="mode-vod" name="mode" value="vod" checked><label for="mode-vod">프로그램 다시듣기</label>
+      <input type="radio" id="mode-live" name="mode" value="live"><label for="mode-live">실시간 듣기</label>
     </div>
-    <script>
-        const schedule = {
-            sbs: { prefix: 'sbs/powerfm', programs: [ { name: '김영철의 파워FM', time: '07:00' }, { name: '아름다운 이 아침 김창완입니다', time: '09:00' }, { name: '박하선의 씨네타운', time: '11:00' }, { name: '최화정의 파워타임', time: '12:00' }, { name: '두시탈출 컬투쇼', time: '14:00' }, { name: '딘딘의 Music High', time: '23:00' } ] },
-            kbs: { prefix: 'kbs/25', programs: [ { name: '조정식의 FM대행진', time: '07:00' }, { name: '이은지의 가요광장', time: '12:00' }, { name: '이현우의 음악앨범', time: '09:00' }, { name: '박명수의 라디오쇼', time: '11:00' }, { name: '윤정수 남창희의 미스터 라디오', time: '16:00' }, { name: '사랑하기 좋은 날 이금희입니다', time: '18:00' } ] }
-        };
+    <div class="controls">
+      <div id="station-group" class="control-group">
+        <label for="station-select">방송국</label>
+        <select id="station-select">
+          <option value="sbs">SBS 파워FM</option>
+          <option value="kbs">KBS Cool FM (2FM)</option>
+        </select>
+      </div>
+      <div id="vod-group" class="control-group">
+        <label for="program-select">프로그램</label>
+        <select id="program-select"></select>
+      </div>
+      <div id="live-group" class="control-group hidden">
+        <label for="delay-select">지연 시간</label>
+        <select id="delay-select"></select>
+      </div>
+      <button id="play-button">
+        <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5v14l11-7z"></path>
+        </svg>
+        <div class="spinner"></div>
+      </button>
+    </div>
+    <div id="status-message"></div>
+    <div id="player-container">
+      <video id="radioPlayer" class="video-js vjs-big-play-centered" controls preload="auto"></video>
+    </div>
+  </div>
+  <script>
+    /* global videojs */
+    const schedule = {
+      sbs: { prefix: 'sbs/powerfm', programs: [ { name: '김영철의 파워FM', time: '07:00' }, { name: '아름다운 이 아침 김창완입니다', time: '09:00' }, { name: '박하선의 씨네타운', time: '11:00' }, { name: '최화정의 파워타임', time: '12:00' }, { name: '두시탈출 컬투쇼', time: '14:00' }, { name: '딘딘의 Music High', time: '23:00' } ] },
+      kbs: { prefix: 'kbs/25', programs: [ { name: '조정식의 FM대행진', time: '07:00' }, { name: '이은지의 가요광장', time: '12:00' }, { name: '이현우의 음악앨범', time: '09:00' }, { name: '박명수의 라디오쇼', time: '11:00' }, { name: '윤정수 남창희의 미스터 라디오', time: '16:00' }, { name: '사랑하기 좋은 날 이금희입니다', time: '18:00' } ] }
+    };
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const stationSelect = document.getElementById('station-select');
-            const programSelect = document.getElementById('program-select');
-            const delaySelect = document.getElementById('delay-select');
-            const modeRadios = document.querySelectorAll('input[name="mode"]');
-            const vodGroup = document.getElementById('vod-group');
-            const liveGroup = document.getElementById('live-group');
+    document.addEventListener('DOMContentLoaded', () => {
+      const stationSelect = document.getElementById('station-select');
+      const programSelect = document.getElementById('program-select');
+      const delaySelect = document.getElementById('delay-select');
+      const modeRadios = document.querySelectorAll('input[name="mode"]');
+      const vodGroup = document.getElementById('vod-group');
+      const liveGroup = document.getElementById('live-group');
 
-            for (let i = 1; i <= 60; i++) {
-                const option = document.createElement('option');
-                option.value = `${i}m`;
-                option.textContent = `${i}분`;
-                delaySelect.appendChild(option);
-            }
+      for (let i = 1; i <= 60; i++) {
+        const option = document.createElement('option');
+        option.value = `${i}m`;
+        option.textContent = `${i}분`;
+        delaySelect.appendChild(option);
+      }
 
-            function updateProgramList() {
-                const selectedStation = stationSelect.value;
-                const stationData = schedule[selectedStation];
-                programSelect.innerHTML = '';
-                stationData.programs.sort((a, b) => a.time.localeCompare(b.time)).forEach(program => {
-                    const option = document.createElement('option');
-                    option.value = program.time;
-                    option.textContent = `${program.time} - ${program.name}`;
-                    programSelect.appendChild(option);
-                });
-            }
-            stationSelect.addEventListener('change', updateProgramList);
-            updateProgramList();
-
-            modeRadios.forEach(radio => {
-                radio.addEventListener('change', function() {
-                    if (this.value === 'live') {
-                        vodGroup.classList.add('hidden');
-                        liveGroup.classList.remove('hidden');
-                    } else {
-                        vodGroup.classList.remove('hidden');
-                        liveGroup.classList.add('hidden');
-                    }
-                });
-            });
+      const updateProgramList = () => {
+        const data = schedule[stationSelect.value];
+        programSelect.innerHTML = '';
+        data.programs.sort((a,b)=>a.time.localeCompare(b.time)).forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.time;
+          opt.textContent = `${p.time} - ${p.name}`;
+          programSelect.appendChild(opt);
         });
+      };
+      stationSelect.addEventListener('change', updateProgramList);
+      updateProgramList();
 
-        const player = videojs('radioPlayer', {
-            html5: {
-                vhs: {
-                    liveSyncDurationCount: 5,
-                    liveMaxLatencyDurationCount: 10,
-                    manifestLoadingTimeOut: 60000
-                }
-            }
-        });
-        const playButton = document.getElementById('play-button');
-        const statusMessage = document.getElementById('status-message');
+      modeRadios.forEach(r => r.addEventListener('change', function() {
+        if (this.value==='live') { vodGroup.classList.add('hidden'); liveGroup.classList.remove('hidden'); }
+        else { vodGroup.classList.remove('hidden'); liveGroup.classList.add('hidden'); }
+      }));
+    });
 
-        const stopLoading = (message = '') => {
-            playButton.classList.remove('is-loading');
-            playButton.disabled = false;
-            statusMessage.textContent = message;
-        };
+    const player = videojs('radioPlayer', {
+      html5: {
+        vhs: {
+          liveSyncDurationCount: 1,
+          liveMaxLatencyDurationCount: 1,
+          segmentBufferMaxSize: 2,
+          manifestLoadingTimeOut: 120000
+        }
+      }
+    });
+    const playButton = document.getElementById('play-button');
+    const statusMessage = document.getElementById('status-message');
 
-        playButton.addEventListener('click', () => {
-            if (playButton.classList.contains('is-loading')) return;
+    const stopLoading = msg => {
+      playButton.classList.remove('is-loading');
+      playButton.disabled = false;
+      statusMessage.textContent = msg||'';
+    };
 
-            playButton.classList.add('is-loading');
-            playButton.disabled = true;
-            statusMessage.textContent = '재생 목록을 요청 중입니다...';
+    playButton.addEventListener('click', () => {
+      if (playButton.classList.contains('is-loading')) return;
+      playButton.classList.add('is-loading');
+      playButton.disabled = true;
+      statusMessage.textContent = '재생 목록을 요청 중입니다...';
 
-            const stationKey = document.getElementById('station-select').value;
-            const stationPrefix = schedule[stationKey].prefix;
-            const selectedMode = document.querySelector('input[name="mode"]:checked').value;
-            let agoValue = '';
-            let liveModeParam = '';
+      const key = document.getElementById('station-select').value;
+      const prefix = schedule[key].prefix;
+      const mode = document.querySelector('input[name="mode"]:checked').value;
+      let ago, liveParam='';
+      if (mode==='vod') {
+        const [h,m]=document.getElementById('program-select').value.split(':').map(Number);
+        const now=Date.now(), kstOffset=9*3600*1000;
+        const startOfDay=new Date(Date.UTC(...new Date(now+kstOffset).toISOString().split(/[-T:]/).map(Number).slice(0,3))).getTime();
+        const startUTC=startOfDay + ((h*60+m)*60000) - kstOffset;
+        const diff=now-startUTC;
+        if (diff<0) { alert('아직 방송이 시작되지 않았습니다.'); stopLoading(); return; }
+        ago=`${Math.round(diff/1000)}s`;
+      } else {
+        ago=document.getElementById('delay-select').value;
+        liveParam='&mode=live';
+      }
+      const url=`https://radio-timeshift-shift.dbr666v.workers.dev/${prefix}.m3u8?ago=${ago}${liveParam}`;
+      statusMessage.textContent='플레이어를 준비합니다...';
+      document.getElementById('player-container').style.display='block';
+      player.src({ src:url, type:'application/x-mpegURL' });
+      player.play().catch(e=>{ console.error(e); stopLoading('재생에 실패했습니다.'); });
+    });
 
-            if (selectedMode === 'vod') {
-                const programTime = document.getElementById('program-select').value;
-                const now = new Date();
-                const kstOffset = 9 * 60 * 60 * 1000;
-                const nowInKST = new Date(now.getTime() + kstOffset);
-                const startOfTodayKST = new Date(Date.UTC(nowInKST.getUTCFullYear(), nowInKST.getUTCMonth(), nowInKST.getUTCDate()));
-                const [hours, minutes] = programTime.split(':').map(Number);
-                const programStartTimestampKST = startOfTodayKST.getTime() + (hours * 60 + minutes) * 60 * 1000;
-                const programStartTimestampUTC = programStartTimestampKST - kstOffset;
-                const agoMs = now.getTime() - programStartTimestampUTC;
-                if (agoMs < 0) {
-                    alert("아직 방송이 시작되지 않았습니다.");
-                    stopLoading();
-                    return;
-                }
-                agoValue = `${Math.round(agoMs / 1000)}s`;
-            } else {
-                agoValue = document.getElementById('delay-select').value;
-                liveModeParam = '&mode=live';
-            }
-
-            const workerUrl = 'https://radio-timeshift-shift.dbr666v.workers.dev/';
-            const playlistUrl = `${workerUrl}${stationPrefix}.m3u8?ago=${agoValue}${liveModeParam}`;
-
-            statusMessage.textContent = '플레이어를 준비합니다...';
-            document.getElementById('player-container').style.display = 'block';
-            player.src({ src: playlistUrl, type: 'application/x-mpegURL' });
-            player.play().catch(e => {
-                 console.error("Playback failed", e);
-                 stopLoading('재생에 실패했습니다.');
-            });
-        });
-
-        player.on('playing', () => stopLoading());
-        player.on('error', () => {
-            console.error("Player Error:", player.error());
-            stopLoading(`플레이어 오류: ${player.error().message}`);
-        });
-    </script>
+    player.on('playing', ()=>stopLoading());
+    player.on('error', ()=>stopLoading(`플레이어 오류: ${player.error().message}`));
+  </script>
 </body>
 </html>
