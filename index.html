@@ -193,17 +193,28 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 시간 선택 드롭다운 메뉴 생성
             const agoSelect = document.getElementById('ago-select');
+            const stationSelect = document.getElementById('station-select');
+            
+            // 시간 선택 드롭다운 메뉴 생성
             for (let i = 1; i <= 20; i++) {
                 const option = document.createElement('option');
                 option.value = `${i}h`;
                 option.textContent = `${i}시간 전`;
-                if (i === 1) { // 기본값으로 1시간 선택
-                    option.selected = true;
-                }
                 agoSelect.appendChild(option);
             }
+
+            // --- ✨ 마지막 선택 기억 기능 추가 (시작) ---
+            const lastStation = localStorage.getItem('timeshift_last_station');
+            const lastAgo = localStorage.getItem('timeshift_last_ago');
+
+            if (lastStation) {
+                stationSelect.value = lastStation;
+            }
+            if (lastAgo) {
+                agoSelect.value = lastAgo;
+            }
+            // --- ✨ 마지막 선택 기억 기능 추가 (끝) ---
         });
 
         const player = videojs('radioPlayer', {
@@ -222,7 +233,7 @@
 
         playButton.addEventListener('click', () => {
             if (playButton.classList.contains('is-loading')) {
-                return; // 로딩 중에는 클릭 방지
+                return;
             }
 
             playButton.classList.add('is-loading');
@@ -230,6 +241,11 @@
 
             const station = document.getElementById('station-select').value;
             const agoValue = document.getElementById('ago-select').value;
+            
+            // --- ✨ 현재 선택 저장 기능 추가 ---
+            localStorage.setItem('timeshift_last_station', station);
+            localStorage.setItem('timeshift_last_ago', agoValue);
+            // --------------------------------
 
             const workerUrl = 'https://radio-timeshift-shift.dbr666v.workers.dev/';
             const playlistUrl = `${workerUrl}${station}.m3u8?ago=${agoValue}`;
@@ -252,15 +268,13 @@
                         } else {
                             console.error('Playback failed:', error);
                         }
-                        stopLoading(); // 에러 발생 시 로딩 상태 해제
+                        stopLoading();
                     });
                 }
             });
         });
 
-        // 재생이 실제로 시작되면 로딩 상태 해제
         player.on('playing', stopLoading);
-        // 플레이어에서 에러 발생 시 로딩 상태 해제
         player.on('error', stopLoading);
 
     </script>
