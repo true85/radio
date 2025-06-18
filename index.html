@@ -1,132 +1,160 @@
-<!-- radio-timeshift-ui.html (v7.1)
-     ✓ MEDIA-SEGMENT 진행 버그 / JSON parse 오류 수정
-     ✓ Video.js 8 + VHS 기본
--->
 <!DOCTYPE html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Timeshift Radio Player</title>
-
-    <!-- video.js 8 (VHS 포함) -->
-    <link href="https://vjs.zencdn.net/8.3.0/video-js.css" rel="stylesheet" />
-    <script src="https://vjs.zencdn.net/8.3.0/video.min.js"></script>
-
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radio Timeshift Player</title>
+    <!-- video.js CDN -->
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <script src="https://vjs.zencdn.net/8.10.0/video.js"></script>
     <style>
-      :root {
-        --bg: #000;
-        --fg: #fff;
-        --panel: #111;
-        --border: #333;
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--fg);
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      }
-      #controls {
-        background: var(--panel);
-        padding: 8px 12px;
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        flex-wrap: wrap;
-        font-size: 14px;
-        border-bottom: 1px solid var(--border);
-      }
-      select {
-        background: #222;
-        color: var(--fg);
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        padding: 4px 8px;
-        font-size: 14px;
-      }
-      #error { color: #f44336; font-size: 12px; }
-      video { width: 100%; height: 100%; background: #000; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2em;
+            color: #1a73e8;
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+        input[type="text"], input[type="datetime-local"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1em;
+            width: 220px;
+        }
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            background-color: #1a73e8;
+            color: white;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            align-self: flex-end; /* Align button to the bottom of the flex container */
+        }
+        button:hover {
+            background-color: #155ab6;
+        }
+        .video-js {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #player-container {
+             display: none; /* Initially hidden */
+        }
     </style>
-  </head>
-  <body>
-    <!-- ▶ 컨트롤 패널 -->
-    <div id="controls">
-      <label for="stream">방송:</label>
-      <select id="stream">
-        <optgroup label="KBS">
-          <option value="kbs:25">KBS 1 Radio</option>
-        </optgroup>
-        <optgroup label="SBS">
-          <option value="sbs:powerfm">파워FM</option>
-        </optgroup>
-      </select>
+</head>
+<body>
 
-      <label for="ago">시점:</label>
-      <select id="ago">
-        <option value="5m">5 분 전</option>
-        <option value="10m">10 분 전</option>
-        <option value="6h" selected>6 시간 전</option>
-        <option value="7h">7 시간 전</option>
-        <option value="8h">8 시간 전</option>
-        <option value="9h">9 시간 전</option>
-      </select>
+    <div class="container">
+        <h1>📻 라디오 타임시프트</h1>
 
-      <span id="error"></span>
+        <div class="controls">
+            <div class="control-group">
+                <label for="station">방송 채널 (Prefix):</label>
+                <input type="text" id="station" value="sbs/powerfm" placeholder="예: sbs/powerfm">
+            </div>
+            <div class="control-group">
+                <label for="startTime">시작 시간:</label>
+                <input type="datetime-local" id="startTime">
+            </div>
+            <button onclick="playRadio()">재생</button>
+        </div>
+        
+        <div id="player-container">
+            <video id="radioPlayer" class="video-js vjs-default-skin" controls preload="auto">
+                <p class="vjs-no-js">
+                    To view this video please enable JavaScript, and consider upgrading to a
+                    web browser that <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+                </p>
+            </video>
+        </div>
     </div>
 
-    <!-- ▶ Player -->
-    <video id="player" class="video-js vjs-default-skin" controls preload="auto" playsinline crossorigin="anonymous"></video>
-
     <script>
-      const SHIFT = "https://radio-timeshift-shift.dbr666v.workers.dev/shift";
-      const $stream = document.getElementById("stream");
-      const $ago    = document.getElementById("ago");
-      const $error  = document.getElementById("error");
-      const player  = videojs("player");
+        // video.js 플레이어 초기화
+        const player = videojs('radioPlayer');
+        
+        // 현재 시간을 datetime-local input의 기본값으로 설정 (한국 시간 기준)
+        document.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // 로컬 시간대로 변환
+            now.setSeconds(0); // 초는 0으로
+            document.getElementById('startTime').value = now.toISOString().slice(0, 16);
+        });
 
-      // 🔸 buildURL 은 /shift/{span}/{type}/{ch}.m3u8 형식 사용
-      const buildURL = () => {
-        const [type, ch] = $stream.value.split(":");
-        return `${SHIFT}/${$ago.value}/${type}/${ch}.m3u8`;
-      };
+        function playRadio() {
+            const station = document.getElementById('station').value.trim();
+            const startTimeValue = document.getElementById('startTime').value;
 
-      const humanError = err => {
-        switch ((err?.code) ?? -1) {
-          case 4: return "재생할 수 없는 미디어 (404/403)";
-          case 2: return "네트워크 오류 (세그먼트 누락)";
-          default: return "재생 오류";
+            if (!station || !startTimeValue) {
+                alert("방송 채널과 시작 시간을 모두 입력해주세요.");
+                return;
+            }
+
+            // datetime-local 값을 ISO 8601 형식(UTC)으로 변환
+            const startTime = new Date(startTimeValue).toISOString();
+
+            // 백엔드 워커 URL (실제 배포된 워커 주소로 변경해야 합니다)
+            const workerUrl = 'https://radio-timeshift-shift.dbr666v.workers.dev/';
+            const playlistUrl = `${workerUrl}${station}.m3u8?start=${startTime}`;
+
+            console.log("요청할 Playlist URL:", playlistUrl);
+            
+            // 플레이어 컨테이너를 보이게 함
+            document.getElementById('player-container').style.display = 'block';
+
+            // video.js 플레이어에 소스 설정
+            player.src({
+                src: playlistUrl,
+                type: 'application/x-mpegURL' // HLS 타입 지정
+            });
+
+            // 재생 시작
+            player.play();
         }
-      };
-
-      /* ─────────── main ─────────── */
-      player.ready(() => {
-        // 복원
-        const savedStream = localStorage.getItem("stream");
-        const savedAgo    = localStorage.getItem("ago");
-        if (savedStream) $stream.value = savedStream;
-        if (savedAgo)    $ago.value    = savedAgo;
-
-        const setSource = () => {
-          localStorage.setItem("stream", $stream.value);
-          localStorage.setItem("ago",    $ago.value);
-
-          $error.textContent = "";
-          player.reset(); // 진입점 리셋 ✨
-          player.src({ src: buildURL(), type: "application/x-mpegURL" });
-          player.play().catch(() => {
-            $error.textContent = "브라우저가 자동 재생을 차단했습니다. ▶ 버튼을 눌러 주세요.";
-          });
-        };
-
-        setSource();
-        player.on("error", () => { $error.textContent = humanError(player.error()); });
-        $stream.addEventListener("change", setSource);
-        $ago.addEventListener("change",    setSource);
-      });
     </script>
-  </body>
+
+</body>
 </html>
