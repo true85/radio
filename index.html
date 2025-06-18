@@ -128,7 +128,15 @@
             });
         });
 
-        const player = videojs('radioPlayer');
+        const player = videojs('radioPlayer', {
+            html5: {
+                vhs: {
+                    liveSyncDurationCount: 5,
+                    liveMaxLatencyDurationCount: 10,
+                    manifestLoadingTimeOut: 60000
+                }
+            }
+        });
         const playButton = document.getElementById('play-button');
         const statusMessage = document.getElementById('status-message');
 
@@ -167,34 +175,27 @@
                     return;
                 }
                 agoValue = `${Math.round(agoMs / 1000)}s`;
-            } else { // live
+            } else {
                 agoValue = document.getElementById('delay-select').value;
                 liveModeParam = '&mode=live';
             }
 
-            // === ✨ 중요: 원래의 워커 주소로 되돌립니다. ===
             const workerUrl = 'https://radio-timeshift-shift.dbr666v.workers.dev/';
-            
             const playlistUrl = `${workerUrl}${stationPrefix}.m3u8?ago=${agoValue}${liveModeParam}`;
-            
-            console.log(`Requesting Playlist: ${playlistUrl}`);
-            
+
             statusMessage.textContent = '플레이어를 준비합니다...';
             document.getElementById('player-container').style.display = 'block';
             player.src({ src: playlistUrl, type: 'application/x-mpegURL' });
             player.play().catch(e => {
                  console.error("Playback failed", e);
-                 stopLoading('재생에 실패했습니다. 워커 로그를 확인해주세요.');
+                 stopLoading('재생에 실패했습니다.');
             });
-
         });
-        
+
         player.on('playing', () => stopLoading());
-        player.on('error', (e) => {
-            if(player.error()){
-                console.error("Player Error:", player.error());
-                stopLoading(`플레이어 오류: ${player.error().message}`);
-            }
+        player.on('error', () => {
+            console.error("Player Error:", player.error());
+            stopLoading(`플레이어 오류: ${player.error().message}`);
         });
     </script>
 </body>
