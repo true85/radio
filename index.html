@@ -52,7 +52,7 @@
             margin-bottom: 5px;
             font-size: 0.9em;
         }
-        input[type="text"], input[type="datetime-local"] {
+        input[type="text"] {
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 8px;
@@ -69,7 +69,7 @@
             font-weight: bold;
             cursor: pointer;
             transition: background-color 0.3s;
-            align-self: flex-end; /* Align button to the bottom of the flex container */
+            align-self: flex-end;
         }
         button:hover {
             background-color: #155ab6;
@@ -81,7 +81,7 @@
             overflow: hidden;
         }
         #player-container {
-             display: none; /* Initially hidden */
+             display: none;
         }
     </style>
 </head>
@@ -96,62 +96,44 @@
                 <input type="text" id="station" value="sbs/powerfm" placeholder="예: sbs/powerfm">
             </div>
             <div class="control-group">
-                <label for="startTime">시작 시간:</label>
-                <input type="datetime-local" id="startTime">
+                <label for="ago">얼마 전부터? (s,m,h,d)</label>
+                <input type="text" id="ago" value="5m" placeholder="예: 5m, 2h, 1d">
             </div>
             <button onclick="playRadio()">재생</button>
         </div>
         
         <div id="player-container">
             <video id="radioPlayer" class="video-js vjs-default-skin" controls preload="auto">
-                <p class="vjs-no-js">
-                    To view this video please enable JavaScript, and consider upgrading to a
-                    web browser that <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
-                </p>
+                <p class="vjs-no-js">To view this video please enable JavaScript.</p>
             </video>
         </div>
     </div>
 
     <script>
-        // video.js 플레이어 초기화
         const player = videojs('radioPlayer');
-        
-        // 현재 시간을 datetime-local input의 기본값으로 설정 (한국 시간 기준)
-        document.addEventListener('DOMContentLoaded', () => {
-            const now = new Date();
-            now.setMinutes(now.getMinutes() - now.getTimezoneOffset()); // 로컬 시간대로 변환
-            now.setSeconds(0); // 초는 0으로
-            document.getElementById('startTime').value = now.toISOString().slice(0, 16);
-        });
 
         function playRadio() {
             const station = document.getElementById('station').value.trim();
-            const startTimeValue = document.getElementById('startTime').value;
+            const agoValue = document.getElementById('ago').value.trim();
 
-            if (!station || !startTimeValue) {
-                alert("방송 채널과 시작 시간을 모두 입력해주세요.");
+            if (!station || !agoValue) {
+                alert("방송 채널과 시간을 모두 입력해주세요.");
                 return;
             }
 
-            // datetime-local 값을 ISO 8601 형식(UTC)으로 변환
-            const startTime = new Date(startTimeValue).toISOString();
-
-            // 백엔드 워커 URL (실제 배포된 워커 주소로 변경해야 합니다)
+            // 백엔드 워커 URL (실제 배포된 워커 주소)
             const workerUrl = 'https://radio-timeshift-shift.dbr666v.workers.dev/';
-            const playlistUrl = `${workerUrl}${station}.m3u8?start=${startTime}`;
+            const playlistUrl = `${workerUrl}${station}.m3u8?ago=${agoValue}`;
 
-            console.log("요청할 Playlist URL:", playlistUrl);
+            console.log("Requesting Playlist URL:", playlistUrl);
             
-            // 플레이어 컨테이너를 보이게 함
             document.getElementById('player-container').style.display = 'block';
 
-            // video.js 플레이어에 소스 설정
             player.src({
                 src: playlistUrl,
-                type: 'application/x-mpegURL' // HLS 타입 지정
+                type: 'application/x-mpegURL'
             });
 
-            // 재생 시작
             player.play();
         }
     </script>
