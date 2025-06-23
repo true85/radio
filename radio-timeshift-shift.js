@@ -30,7 +30,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname.startsWith('/get/')) return this.serveSegment(request, env);
     if (url.pathname.endsWith('.m3u8')) return this.handlePlaylist(request, env);
-    return new Response('Radio Timeshift Worker v6.4');
+    return new Response('Radio Timeshift Worker v6.5');
   },
 
   async handlePlaylist(request, env) {
@@ -62,7 +62,7 @@ export default {
     // 방송국별 세그먼트 길이 (KBS: 5초, SBS: 9초)
     const prefix = url.pathname.slice(1, -5);
     const dur = prefix.startsWith('kbs') ? 5 : 9;
-    const tgt = Math.max(dur, Math.ceil(dur * 3));
+    const tgt = Math.max(60, Math.ceil(dur * 3));
 
     let selected = [];
     let seq = 0;
