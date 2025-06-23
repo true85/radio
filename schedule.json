@@ -1,0 +1,10 @@
+{
+  "sbs": {
+    "prefix": "sbs/powerfm",
+    "programs": []
+  },
+  "kbs": {
+    "prefix": "kbs/25",
+    "programs": []
+  }
+}
