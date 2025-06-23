@@ -1,28 +1,46 @@
 name: weekly-schedule
+
 on:
+  # 매주 월요일 12:00 KST(03:00 UTC) + 수동 실행 지원
   schedule:
-    # 월요일 03:00 UTC = 월 12:00 KST
-    - cron:  '0 3 * * 1'
-  workflow_dispatch:      # 수동 실행도 가능
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write            # push 권한 부여
+
 jobs:
   update:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0      # push 위해 전체 히스토리 필요
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
-      - name: Install deps
+      - name: Install dependencies
         run: pip install beautifulsoup4 requests
 
       - name: Run scraper
         run: python crawler/fetch_schedule.py
 
       - name: Commit & push if changed
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config user.email "bot@github" && git config user.name "schedule-bot"
-          git add schedule.json
-          git diff --cached --quiet || git commit -m "chore: weekly schedule update" && git push
+          git config user.email "schedule-bot@github.com"
+          git config user.name  "schedule-bot"
+          git add schedule.json || true
+          # 변경이 없으면 종료(성공)
+          if git diff --cached --quiet; then
+            echo "No changes in schedule.json"
+            exit 0
+          fi
+          git commit -m "chore: weekly schedule update" || exit 0
+          git push origin HEAD:${{ github.ref_name }}
