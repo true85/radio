@@ -1,0 +1,28 @@
+name: weekly-schedule
+on:
+  schedule:
+    # 월요일 03:00 UTC = 월 12:00 KST
+    - cron:  '0 3 * * 1'
+  workflow_dispatch:      # 수동 실행도 가능
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install deps
+        run: pip install beautifulsoup4 requests
+
+      - name: Run scraper
+        run: python crawler/fetch_schedule.py
+
+      - name: Commit & push if changed
+        run: |
+          git config user.email "bot@github" && git config user.name "schedule-bot"
+          git add schedule.json
+          git diff --cached --quiet || git commit -m "chore: weekly schedule update" && git push
