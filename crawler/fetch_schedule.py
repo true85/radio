@@ -10,27 +10,28 @@ FMT = "%Y/%-m/%-d"   # 0-패딩 없는 년/월/일
 TIME_RE = re.compile(r"^\\d{2}:\\d{2}$")
 def clean(t): return re.sub(r"\\s+", " ", t.strip())
 
-# ── robust SBS JSON ───────────────────────────────────────────
+# ── robust SBS JSON scraper ───────────────────────────
 def fetch_sbs():
-    ymd = MONDAY.strftime(FMT)               # e.g. 2025/6/23
+    ymd = MONDAY.strftime("%Y/%-m/%-d")               # 2025/6/23
     url = f"https://static.cloud.sbs.co.kr/schedule/{ymd}/Power.json"
     try:
         resp = requests.get(url, headers=HEAD, timeout=20)
-        resp.raise_for_status()              # 4xx/5xx → exception
+        resp.raise_for_status()
         data = resp.json()
     except Exception as e:
         print(f"[SBS] request failed: {e}", file=sys.stderr)
         return {"prefix": "sbs/powerfm", "programs": []}
 
-    progs = [
-        {"name": item["programName"], "time": item["stdHours"]}
-        for item in data.get("schedulerPrograms", [])
-        if TIME_RE.match(item.get("stdHours", ""))
+    # 👉 리스트 or 딕트 모두 지원
+    items = data if isinstance(data, list) else data.get("schedulerPrograms", [])
+
+    programs = [
+        {"name": itm.get("programName", ""), "time": itm.get("stdHours", "")}
+        for itm in items
+        if TIME_RE.match(itm.get("stdHours", "")) and itm.get("programName")
     ]
-    print(f"[SBS] parsed {len(progs)} rows")
-    return {"prefix": "sbs/powerfm", "programs": progs}
-
-
+    print(f"[SBS] parsed {len(programs)} rows")
+    return {"prefix": "sbs/powerfm", "programs": programs}
 
 # ── KBS ─────────────────────────────────────────────
 
