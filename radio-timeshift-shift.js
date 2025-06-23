@@ -49,7 +49,7 @@ export default {
     const segments = objs.map(o => ({ key: o.key, uploaded: o.uploaded.toISOString() }));
 
     const resp = this.generatePlaylist(url, segments);
-    resp.headers.set('Cache-Control', 'public, max-age=0, s-maxage=10');
+    resp.headers.set('Cache-Control', 'public, max-age=0, s-maxage=30');
     return resp;
   },
 
