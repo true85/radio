@@ -1,33 +1,35 @@
-#!/usr/bin/env python3
-"""📡 Weekly radio schedule scraper (SBS Power‑FM, KBS Cool‑FM)
-Robust selectors + fallback to minimise empty list issues.
-Generates schedule.json at repo root.
-"""
 import json, datetime as dt, re, sys, requests
-from bs4 import BeautifulSoup as BS
+from bs4 import BeautifulSoup as BS   # KBS에서 그대로 사용
 
-UA = "schedule-bot/1.1 (+github actions)"
+UA = "schedule-bot/1.2 (+github actions)"
 HEAD = {"User-Agent": UA}
 TODAY = dt.date.today()
 MONDAY = TODAY - dt.timedelta(days=TODAY.weekday())
-FMT = "%Y%m%d"
-TIME_RE = re.compile(r"^\d{2}:\d{2}$")
+FMT = "%Y/%-m/%-d"   # 0-패딩 없는 년/월/일
 
-def clean(txt: str) -> str:
-    return re.sub(r"\s+", " ", txt.strip())
+TIME_RE = re.compile(r"^\\d{2}:\\d{2}$")
+def clean(t): return re.sub(r"\\s+", " ", t.strip())
 
-# ── SBS JSON Scraper ───────────────────────────────────────────
+# ── robust SBS JSON ───────────────────────────────────────────
 def fetch_sbs():
-    y, m, d = MONDAY.year, MONDAY.month, MONDAY.day           # 주간 기준 날짜
-    url = f"https://static.cloud.sbs.co.kr/schedule/{y}/{m}/{d}/Power.json"
-    data = requests.get(url, headers=HEAD, timeout=20).json()
-    programs = [
+    ymd = MONDAY.strftime(FMT)               # e.g. 2025/6/23
+    url = f"https://static.cloud.sbs.co.kr/schedule/{ymd}/Power.json"
+    try:
+        resp = requests.get(url, headers=HEAD, timeout=20)
+        resp.raise_for_status()              # 4xx/5xx → exception
+        data = resp.json()
+    except Exception as e:
+        print(f"[SBS] request failed: {e}", file=sys.stderr)
+        return {"prefix": "sbs/powerfm", "programs": []}
+
+    progs = [
         {"name": item["programName"], "time": item["stdHours"]}
         for item in data.get("schedulerPrograms", [])
-        if TIME_RE.match(item.get("stdHours", ""))            # HH:MM 필터
+        if TIME_RE.match(item.get("stdHours", ""))
     ]
-    print(f"[SBS] parsed {len(programs)} rows")
-    return {"prefix": "sbs/powerfm", "programs": programs}
+    print(f"[SBS] parsed {len(progs)} rows")
+    return {"prefix": "sbs/powerfm", "programs": progs}
+
 
 
 # ── KBS ─────────────────────────────────────────────
