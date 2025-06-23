@@ -70,7 +70,7 @@ const schedule={
     {name:'사랑하기 좋은 날 이금희입니다',time:'18:00'}]}
 };
 
-// 요소
+// 요소 선택
 const selStation=document.getElementById('station');
 const selProgram=document.getElementById('program');
 const playBtn=document.getElementById('play-btn');
@@ -90,22 +90,39 @@ function fillPrograms(){
 selStation.addEventListener('change',fillPrograms);
 fillPrograms();
 
-// video.js 플레이어
+// video.js 초기화
 const player=videojs('player');
 
 function playProgram(){
   const key=selStation.value;
   const prefix=schedule[key].prefix;
   const [h,m]=selProgram.value.split(':').map(Number);
-  const now=Date.now();
-  const kst=9*3600*1000;
-  const startOfDay=new Date(Date.UTC(...new Date(now+kst).toISOString().split(/[-T:]/).slice(0,3))).getTime();
-  const progStart=startOfDay+((h*60+m)*60000)-kst;
-  const diff=now-progStart;
-  if(diff<0){status.textContent='아직 방송이 시작되지 않았어요.';return;}
+
+  const now=new Date();
+  const kstOffset=9*60*60*1000; // KST → UTC
+
+  // 오늘(브라우저 기준) 00:00 KST 를 UTC 타임스탬프로 계산
+  const todayKST=new Date(now.getTime()+kstOffset);
+  const startOfDayUTC=Date.UTC(todayKST.getUTCFullYear(),todayKST.getUTCMonth(),todayKST.getUTCDate());
+
+  // 선택 프로그램 시작 시각 (오늘 날짜 기준 KST)
+  let progStartUTC=startOfDayUTC+(h*60+m)*60*1000-kstOffset;
+
+  // 과거 방송 처리: diff 음수면 하루 전으로 이동
+  let diff=now.getTime()-progStartUTC;
+  if(diff<0){
+    progStartUTC-=24*60*60*1000;
+    diff=now.getTime()-progStartUTC;
+  }
+
+  if(diff<0){
+    status.textContent='아직 방송이 시작되지 않았어요.';
+    return;
+  }
+
   const ago=Math.round(diff/1000)+'s';
   const src=`https://radio-timeshift-shift.dbr666v.workers.dev/${prefix}.m3u8?ago=${ago}`;
-  status.textContent='재생 중...';
+  status.textContent=`${selProgram.options[selProgram.selectedIndex].textContent} 재생 중...`;
   player.src({src,type:'application/x-mpegURL'});
   player.play();
 }
