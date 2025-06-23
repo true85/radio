@@ -16,27 +16,31 @@ TIME_RE = re.compile(r"^\d{2}:\d{2}$")
 def clean(txt: str) -> str:
     return re.sub(r"\s+", " ", txt.strip())
 
-# ── SBS ─────────────────────────────────────────────
+# ── SBS Scraper (div 구조 대응) ──────────────────────────────
 def fetch_sbs():
-    url = f"https://www.sbs.co.kr/m/schedule/index.html?channel=Power&pmDate={MONDAY.strftime(FMT)}&type=ra"
+    url = (
+        f"https://www.sbs.co.kr/schedule/index.html"
+        f"?type=ra&channel=Power&pmDate={MONDAY.strftime(FMT)}"
+    )
     html = requests.get(url, headers=HEAD, timeout=20).text
     soup = BS(html, "html.parser")
 
-    table = soup.find("table", class_=lambda x: x and "schedule" in x)
-    if not table:
-        print("[SBS] table not found", file=sys.stderr)
+    root = soup.select_one("#sbs-scheduler-schedulerList-self")
+    if not root:
+        print("[SBS] root div not found", file=sys.stderr)
         return {"prefix": "sbs/powerfm", "programs": []}
 
     programs = []
-    for tr in table.select("tbody tr"):
-        tcell = tr.find("th") or tr.find("td")
-        ncell = tr.find("td", class_=re.compile("(show|tit)")) or tr.find("td")
-        if not (tcell and ncell):
-            continue
-        time = clean(tcell.text)
-        name = clean(ncell.text)
-        if TIME_RE.match(time) and name:
-            programs.append({"name": name, "time": time})
+    for box in root.select("div.scheduler_program_w"):
+        time_el  = box.select_one(".spt_hours")
+        title_el = box.select_one(".spi_title_w .spi_title, .spi_title_w strong")
+        time  = clean(time_el.text)  if time_el  else ""
+        title = clean(title_el.text) if title_el else ""
+        # 일자별 'AM/PM' 표기가 붙을 때가 있어 시간만 남깁니다 (HH:MM 형태)
+        time = re.sub(r"[^0-9:]", "", time)
+        if TIME_RE.match(time) and title:
+            programs.append({"name": title, "time": time})
+
     print(f"[SBS] parsed {len(programs)} rows")
     return {"prefix": "sbs/powerfm", "programs": programs}
 
