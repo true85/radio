@@ -1,10 +1,10 @@
 /* ===========================================================================
- * radio-timeshift-shift  v6.4 (세그먼트 극대화 + 폴링 최소화)
+ * radio-timeshift-shift  v6.5 (방송국별 세그먼트 길이 적용)
  * ===========================================================================
  * 🎧 변경 사항 요약
  * -------------------------------------------------------------------------
- * ▸ 세그먼트 길이를 30초로 고정하여 TS 호출 간격을 최대화
- * ▸ livePlaylistSize를 2로 축소해 m3u8 재요청 최소화
+ * ▸ 방송국(KBS/SBS)별 세그먼트 길이 적용 (KBS 5초, SBS 9초)
+ * ▸ livePlaylistSize를 약 40초 분량으로 조정해 m3u8 재요청 최소화
  * ▸ video.js VHS 설정 강화: segmentBufferMaxSize, manifestLoadingTimeOut 조정
  * ===========================================================================*/
 
@@ -59,14 +59,16 @@ export default {
     const arr = segments.map(s => ({ key: s.key, time: new Date(s.uploaded).getTime() }));
     const isLive = url.searchParams.get('mode') === 'live';
 
-    // 세그먼트 길이 30초 고정
-    const dur = 30.0;
-    const tgt = Math.max(30, Math.ceil(dur * 3));
+    // 방송국별 세그먼트 길이 (KBS: 5초, SBS: 9초)
+    const prefix = url.pathname.slice(1, -5);
+    const dur = prefix.startsWith('kbs') ? 5 : 9;
+    const tgt = Math.max(dur, Math.ceil(dur * 3));
 
     let selected = [];
     let seq = 0;
     if (isLive) {
-      const count = 2;  // 플레이리스트 세그먼트 2개만 포함
+      const liveWindowSec = 40;                // 약 40초 분량 노출
+      const count = Math.ceil(liveWindowSec / dur);
       const idx = arr.findIndex(x => x.time >= startTime);
       if (idx < 0) {
         selected = arr.slice(-count);
