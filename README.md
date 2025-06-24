@@ -1,40 +1,43 @@
-# radio
-radio는 두 개의 라디오 방송(SBS 파워FM, KBS Cool FM)을 실시간 스트리밍 및 타임시프트(지정한 시점으로 되감기 재생)로 들을 수 있는 웹 플레이어입니다.
+# radio (타임시프트 라디오, VOD 전용)
+
+SBS 파워FM, KBS Cool FM 라디오 방송의 "다시듣기(VOD)" 기능을 제공하는 웹 플레이어입니다. 실시간 스트리밍 기능은 제공하지 않으며, 원하는 프로그램/시간을 선택해 과거 방송을 재생할 수 있습니다.
 
 ## 주요 기능
-- 실시간 방송 청취: SBS 파워FM, KBS Cool FM 두 방송을 실시간으로 스트리밍합니다.
-- 타임시프트(시간 이동 재생): 사용자가 원하는 시점(과거의 방송 시간)으로 이동하여 들을 수 있습니다.
-- 방송 선택: 방송국과 프로그램을 선택할 수 있습니다.
-- 간단한 웹 UI: HTML 기반의 직관적인 사용자 인터페이스 제공.
-## 동작 방식
-- 백엔드(worker 및 durable object)는 각 방송 스트림의 m3u8(playlist)을 주기적으로 폴링하여 세그먼트(.aac, .ts 파일)를 Cloudflare R2 스토리지에 저장합니다.
-- 방송별로 저장된 세그먼트 파일을 기반으로, 사용자가 요청한 시간(예: 30분 전, 1시간 전 등)에 해당하는 플레이리스트(m3u8)를 생성하여 제공합니다.
-- 프론트엔드(index.html)는 방송국/프로그램 선택, 실시간/다시듣기 모드 전환, 시간 선택 등 UI를 제공합니다.
-- 플레이어는 방송국별 prefix와 시간(ago 파라미터), 모드(live/vod)를 조합해 백엔드에서 실시간 또는 타임시프트 m3u8을 받아옵니다.
+- SBS 파워FM, KBS Cool FM 방송의 과거 프로그램 다시듣기(VOD)
+- 방송국/프로그램/시점(시작 시간) 선택 UI
+- 방송별 최신 편성표(schedule.json) 자동 반영
+- Cloudflare Durable Object + R2 기반 세그먼트 수집 및 저장
+- video.js 기반 HLS 플레이어 제공
 
-## 사용 예시
-1. 방송국을 선택합니다.
-  - SBS 파워FM
-  - KBS Cool FM (2FM)
-2. 모드를 선택합니다.
+## 동작 구조
+- **timeshift-dvr.js**: 방송 스트림(m3u8)을 주기적으로 폴링하여 세그먼트(.aac/.ts)를 Cloudflare R2에 저장 (중복 방지, 재시도, 관리 API)
+- **radio-timeshift-shift.js**: 저장된 세그먼트로부터 사용자가 지정한 시점(ago 파라미터)에 맞는 m3u8 플레이리스트를 동적으로 생성 (VOD 전용)
+- **index.html**: 방송국/프로그램/시점 선택 UI 및 video.js 플레이어
+- **schedule.json**: SBS/KBS 공식 API에서 자동 크롤링된 최신 편성표 (crawler/fetch_schedule.py + GitHub Actions)
 
-  - 프로그램 다시듣기(특정 시점 재생)
-  - 실시간 듣기
-3. 프로그램 또는 지연 시간(몇 분 전 등)을 선택하면 해당 구간의 방송이 재생됩니다.
+## 사용법
+1. 웹 UI(index.html)에서 방송국과 프로그램을 선택합니다.
+2. 원하는 프로그램(시작 시간)을 선택 후 "재생" 버튼을 누르면 해당 시점부터 방송이 재생됩니다.
+3. 방송별로 최신 편성표가 자동 반영됩니다.
 
-## 기술 스택
-- 프론트엔드: HTML, JavaScript
-- 백엔드: Cloudflare Workers, Durable Object, R2 Storage
-- 스트림 포맷: HLS (m3u8, AAC/TS 세그먼트)
-## 빠른 시작
-- 방송 파워FM 초기화 예시:
-'''Code
-/init?name=sbs_powerfm&url=https://apis.sbs.co.kr/play-api/1.0/livestream/powerpc/powerfm?protocol=hls&ssl=Y&prefix=sbs/powerfm&interval=5
-'''
-- 방송 KBS 25 초기화 예시:
-'''Code
-/init?name=kbs_25&url=https://cfpwwwapi.kbs.co.kr/api/v1/landing/live/channel_code/25&prefix=kbs/25
-'''
+## 빠른 시작 (세그먼트 수집 인스턴스 생성)
+- SBS 파워FM:
+  
+  `/init?name=sbs_powerfm&url=https://apis.sbs.co.kr/play-api/1.0/livestream/powerpc/powerfm?protocol=hls&ssl=Y&prefix=sbs/powerfm&interval=5`
+
+- KBS 25:
+  
+  `/init?name=kbs_25&url=https://cfpwwwapi.kbs.co.kr/api/v1/landing/live/channel_code/25&prefix=kbs/25`
+
+## 파일 구조 및 역할
+- `index.html` : 사용자 웹 UI (방송/프로그램 선택, video.js 플레이어)
+- `radio-timeshift-shift.js` : VOD 전용 Cloudflare Worker (m3u8 동적 생성, 세그먼트 전달)
+- `timeshift-dvr.js` : Durable Object 기반 세그먼트 수집기 (R2 저장)
+- `schedule.json` : 방송별 프로그램 편성표 (자동 크롤링)
+- `crawler/fetch_schedule.py` : 편성표 크롤러 (SBS/KBS 공식 API)
+- `.github/workflows/fetch-schedule.yml` : GitHub Actions로 편성표 자동 갱신
+
 ## 기타
-- 세그먼트 중복 저장 방지, 일정 주기마다 세그먼트 수집 및 저장, 최대 재시도 등 안정성을 고려한 구조입니다.
-- Cloudflare 환경에 최적화되어 동작합니다.
+- 세그먼트 중복 저장 방지, 재시도, 주기적 백업 등 안정성 고려
+- Cloudflare 환경에 최적화된 구조
+- 실시간 스트리밍은 지원하지 않음 (VOD 전용)
