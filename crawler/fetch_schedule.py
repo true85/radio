@@ -7,7 +7,7 @@ TODAY = dt.date.today()
 MONDAY = TODAY - dt.timedelta(days=TODAY.weekday())
 FMT = "%Y/%-m/%-d"   # 0-패딩 없는 년/월/일
 
-TIME_RE = re.compile(r"^\\d{2}:\\d{2}$")
+TIME_RE = re.compile(r"^\d{1,2}:\d{2}$")   # ← 01:00 / 9:00 모두 OK
 def clean(t): return re.sub(r"\\s+", " ", t.strip())
 
 def fetch_sbs():
