@@ -10,26 +10,30 @@ FMT = "%Y/%-m/%-d"   # 0-패딩 없는 년/월/일
 TIME_RE = re.compile(r"^\\d{2}:\\d{2}$")
 def clean(t): return re.sub(r"\\s+", " ", t.strip())
 
-# ── robust SBS JSON scraper ───────────────────────────
+# ── SBS JSON Scraper (start_time, title) ──────────────────────
 def fetch_sbs():
-    ymd = MONDAY.strftime("%Y/%-m/%-d")               # 2025/6/23
+    # 0-패딩 없는 경로: YYYY/M/D
+    ymd = f"{MONDAY.year}/{MONDAY.month}/{MONDAY.day}"
     url = f"https://static.cloud.sbs.co.kr/schedule/{ymd}/Power.json"
+
     try:
         resp = requests.get(url, headers=HEAD, timeout=20)
         resp.raise_for_status()
-        data = resp.json()
+        data = resp.json()           # ← 최상위가 list
     except Exception as e:
         print(f"[SBS] request failed: {e}", file=sys.stderr)
         return {"prefix": "sbs/powerfm", "programs": []}
 
-    # 👉 리스트 or 딕트 모두 지원
-    items = data if isinstance(data, list) else data.get("schedulerPrograms", [])
-
     programs = [
-        {"name": itm.get("programName", ""), "time": itm.get("stdHours", "")}
-        for itm in items
-        if TIME_RE.match(itm.get("stdHours", "")) and itm.get("programName")
+        {
+            "name": item.get("title", "").strip(),
+            "time": item.get("start_time", "").strip()
+        }
+        for item in data
+        if TIME_RE.match(item.get("start_time", ""))   # HH:MM 필터
+           and item.get("title")
     ]
+
     print(f"[SBS] parsed {len(programs)} rows")
     return {"prefix": "sbs/powerfm", "programs": programs}
 
