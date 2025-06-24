@@ -71,7 +71,11 @@ def fetch_kbs():
             hhmm = itm.get("program_planned_start_time", "")[:4]  # HHMM
             if len(hhmm) != 4 or not hhmm.isdigit():
                 continue
-            time = f"{int(hhmm[:2]):02d}:{hhmm[2:]}"
+            hh, mm = int(hhmm[:2]), hhmm[2:]
+            # 24:00 이후(다음날) 또는 잘못된 분(min) 값은 제외
+            if hh >= 24 or int(mm) >= 60:
+                continue
+            time = f"{hh:02d}:{mm}"
             title = clean(itm.get("program_title", ""))
             if TIME_RE.match(time) and title:
                 raw_items.append({"name": title, "time": time})
