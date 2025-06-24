@@ -43,7 +43,12 @@ def fetch_sbs():
 # ── 2. KBS Cool FM (channel 25) ─────────────────────────────
 
 def fetch_kbs():
-    date_str = MONDAY.strftime(FMT_API)            # 20250624
+    """KBS Cool‑FM (channel 25)
+    • API는 같은 프로그램을 30분 간격으로 쪼개어 돌려준다.
+    • 아래 로직은 [프로그램명]이 동일하고 연속된 항목을 하나로 병합해
+      시작 시각만 보존한다 (시간 순 정렬 전제).
+    """
+    date_str = MONDAY.strftime(FMT_API)  # 20250624
     url = (
         "https://static.api.kbs.co.kr/mediafactory/v1/schedule/weekly"
         f"?local_station_code=00&channel_code=24,25,26"
@@ -55,22 +60,38 @@ def fetch_kbs():
         print(f"[KBS] request failed: {e}", file=sys.stderr)
         return {"prefix": "kbs/25", "programs": []}
 
-    # 응답은 배열 → 각 객체에 schedules 배열
-    programs = []
+    # 추출 + 병합
+    raw_items = []
     for day in data:
         if day.get("channel_code") != "25":
-            continue  # Cool FM 만
-        for item in day.get("schedules", []):
-            raw = item.get("program_planned_start_time", "")[:4]  # HHMM
-            if len(raw)==4:
-                time = f"{int(raw[:2]):02d}:{raw[2:]}"
-            else:
-                time = ""
-            title = item.get("program_title", "").strip()
+            continue
+        for itm in day.get("schedules", []):
+            start_raw = itm.get("program_planned_start_time", "")[:4]  # HHMM
+            if len(start_raw) != 4:
+                continue
+            hh = int(start_raw[:2]); mm = start_raw[2:]
+            time = f"{hh:02d}:{mm}"
+            title = itm.get("program_title", "").strip()
             if TIME_RE.match(time) and title:
-                programs.append({"name": title, "time": time})
-    print(f"[KBS] parsed {len(programs)} rows")
-    return {"prefix": "kbs/25", "programs": programs}
+                raw_items.append({"name": title, "time": time})
+
+    # 시간 순 정렬
+    raw_items.sort(key=lambda x: x["time"])
+
+        # 병합: 같은 프로그램이 하루에 여러 슬롯(30분 간격)으로 나뉘어 있을 때
+    #       → 첫 등장 시각만 남기고 이후 중복은 모두 제거
+    merged, seen = [], set()
+    for row in raw_items:
+        if row["name"] in seen:
+            continue                    # 이미 추가된 프로그램은 스킵
+        if "뉴스" in row["name"]:       # 30분 뉴스 등 짧은 코너 제외 (원하면 삭제)
+            continue
+        merged.append(row)
+        seen.add(row["name"])
+
+    print(f"[KBS] parsed {len(merged)} rows (dedup from {len(raw_items)})")
+    return {"prefix": "kbs/25", "programs": merged}
+ {"prefix": "kbs/25", "programs": merged}
 
 # ── MAIN ────────────────────────────────────────────────────
 if __name__ == "__main__":
