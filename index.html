@@ -21,7 +21,7 @@
     .control-group{display:flex;flex-direction:column;text-align:left}
     label{font-weight:500;color:var(--label);margin-bottom:6px}
     select{padding:10px;border:1px solid var(--border);border-radius:8px;font:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    #play-btn{padding:11px 20px;border:none;border-radius:10px;font-weight:600;color:#fff;background:var(--primary);cursor:pointer;height:40px}
+    #play-btn{min-width:90px;padding:11px 16px;border:none;border-radius:10px;font-weight:600;color:#fff;background:var(--primary);cursor:pointer;height:40px;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;} .btn-icon{font-size:14px;}@media(max-width:480px){.btn-label{display:none;}}
     #status{margin-top:12px;font-style:italic;color:#888;min-height:20px}
     .video-js{width:100%;height:56px;border-radius:12px;overflow:hidden;background:#222;margin-top:20px}
 
@@ -45,7 +45,7 @@
         <label for="program">프로그램</label>
         <select id="program"></select>
       </div>
-      <button id="play-btn">▶ 재생</button>
+      <button id="play-btn"><span class="btn-icon">▶</span><span class="btn-label">재생</span></button>
     </div>
 
     <!-- 7h / 8h 퀵버튼 -->
